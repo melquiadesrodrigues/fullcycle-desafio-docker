@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+
+  mysql:
+    image: melquiadesrodrigues/mysql:5.7
+    command: --innodb-use-native-aio=0
+    container_name: fullcycle-mysql
+    restart: always
+    tty: true
+    ports:
+      - "33066:3306"
+    environment:
+      MYSQL_DATABASE: 'fullcycle'
+      MYSQL_ROOT_PASSWORD: '12345'
+    networks:
+      - fullcycle-network
+
+  app:
+    build: 
+      context: node
+    container_name: fullcycle-app
+    entrypoint: dockerize -wait tcp://mysql:3306 -timeout 20s ./docker-entrypoint.sh
+    volumes:
+      - ./node:/usr/src/app
+    networks:
+      - fullcycle-network
+    depends_on:
+      - mysql
+
+  nginx:
+    build: 
+      context: nginx
+    container_name: fullcycle-nginx
+    restart: always
+    tty: true
+    ports:
+      - "8000:80"
+    networks:
+      - fullcycle-network
+    depends_on:
+      - app
+
+networks:
+  fullcycle-network:
+    driver: bridge
